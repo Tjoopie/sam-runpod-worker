@@ -158,12 +158,13 @@ def handler(job):
         
         print(f"Final image dtype: {image.dtype}, contiguous: {image.flags['C_CONTIGUOUS']}")
         
-        # The issue is torch.as_tensor() can't infer dtype from numpy.uint8 in this environment
-        # Solution: Convert to torch tensor manually and use set_torch_image
-        # First, preprocess the image ourselves (what set_image does internally)
+        # The issue is torch.as_tensor() and torch.from_numpy() have issues in this environment
+        # Solution: Convert to Python list first, then to torch tensor
         
-        # Normalize and convert to tensor
-        image_tensor = torch.from_numpy(image.copy()).permute(2, 0, 1).unsqueeze(0).float()
+        # Convert numpy array to Python list, then to tensor
+        image_list = image.tolist()
+        image_tensor = torch.tensor(image_list, dtype=torch.float32, device=predictor.device)
+        image_tensor = image_tensor.permute(2, 0, 1).unsqueeze(0)  # HWC -> NCHW
         
         # Apply SAM's preprocessing
         # SAM expects images normalized to [0, 255] and resized to 1024x1024
