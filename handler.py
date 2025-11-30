@@ -158,8 +158,16 @@ def handler(job):
         
         print(f"Final image dtype: {image.dtype}, contiguous: {image.flags['C_CONTIGUOUS']}")
         
+        # The issue is torch.as_tensor() can't infer dtype from numpy.uint8
+        # Solution: Create a fresh numpy array with explicit dtype
+        # Use np.empty + copy to ensure a completely fresh array
+        fresh_image = np.empty(image.shape, dtype=np.uint8)
+        np.copyto(fresh_image, image)
+        
+        print(f"Fresh image dtype: {fresh_image.dtype}, type: {type(fresh_image.dtype)}")
+        
         # Set image for predictor
-        predictor.set_image(image)
+        predictor.set_image(fresh_image)
         
         # Create input point - explicitly specify dtypes for numpy/torch compatibility
         input_point = np.array([[click_x, click_y]], dtype=np.float32)
