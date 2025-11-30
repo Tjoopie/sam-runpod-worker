@@ -158,16 +158,35 @@ def handler(job):
         
         print(f"Final image dtype: {image.dtype}, contiguous: {image.flags['C_CONTIGUOUS']}")
         
-        # The issue is torch.as_tensor() can't infer dtype from numpy.uint8
-        # Solution: Create a fresh numpy array with explicit dtype
-        # Use np.empty + copy to ensure a completely fresh array
-        fresh_image = np.empty(image.shape, dtype=np.uint8)
-        np.copyto(fresh_image, image)
+        # The issue is torch.as_tensor() can't infer dtype from numpy.uint8 in this environment
+        # Solution: Convert to torch tensor manually and use set_torch_image
+        # First, preprocess the image ourselves (what set_image does internally)
         
-        print(f"Fresh image dtype: {fresh_image.dtype}, type: {type(fresh_image.dtype)}")
+        # Normalize and convert to tensor
+        image_tensor = torch.from_numpy(image.copy()).permute(2, 0, 1).unsqueeze(0).float()
         
-        # Set image for predictor
-        predictor.set_image(fresh_image)
+        # Apply SAM's preprocessing
+        # SAM expects images normalized to [0, 255] and resized to 1024x1024
+        target_size = 1024
+        
+        # Resize image tensor
+        image_tensor = torch.nn.functional.interpolate(
+            image_tensor,
+            size=(target_size, target_size),
+            mode='bilinear',
+            align_corners=False
+        )
+        
+        # Move to device
+        image_tensor = image_tensor.to(predictor.device)
+        
+        print(f"Image tensor shape: {image_tensor.shape}, dtype: {image_tensor.dtype}")
+        
+        # Use the model's image encoder directly
+        predictor.original_size = (height, width)
+        predictor.input_size = (target_size, target_size)
+        predictor.features = predictor.model.image_encoder(image_tensor)
+        predictor.is_image_set = True
         
         # Create input point - explicitly specify dtypes for numpy/torch compatibility
         input_point = np.array([[click_x, click_y]], dtype=np.float32)
