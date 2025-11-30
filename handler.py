@@ -193,8 +193,13 @@ def handler(job):
         }
         
     except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
+        print(f"ERROR: {str(e)}")
+        print(f"TRACEBACK:\n{error_traceback}")
         return {
             "error": str(e),
+            "traceback": error_traceback,
             "processing_time_ms": int((time.time() - start_time) * 1000)
         }
 
