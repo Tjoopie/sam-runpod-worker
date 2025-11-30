@@ -143,9 +143,9 @@ def handler(job):
         # Set image for predictor
         predictor.set_image(image)
         
-        # Create input point
-        input_point = np.array([[click_x, click_y]])
-        input_label = np.array([1])  # foreground
+        # Create input point - explicitly specify dtypes for numpy/torch compatibility
+        input_point = np.array([[click_x, click_y]], dtype=np.float32)
+        input_label = np.array([1], dtype=np.int32)  # foreground
         
         # Predict mask
         masks, scores, _ = predictor.predict(
