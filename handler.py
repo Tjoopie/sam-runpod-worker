@@ -140,8 +140,8 @@ def handler(job):
         
         print(f"Segmenting at pixel ({click_x}, {click_y}) on {width}x{height} image")
         
-        # Set image for predictor
-        predictor.set_image(image)
+        # Set image for predictor - explicitly cast to uint8 to avoid dtype inference issues
+        predictor.set_image(image.astype(np.uint8))
         
         # Create input point - explicitly specify dtypes for numpy/torch compatibility
         input_point = np.array([[click_x, click_y]], dtype=np.float32)
