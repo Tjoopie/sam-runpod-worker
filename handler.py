@@ -45,7 +45,9 @@ def base64_to_image(base64_string):
     
     image_bytes = base64.b64decode(base64_string)
     image = Image.open(io.BytesIO(image_bytes))
-    return np.array(image.convert('RGB'))
+    # Explicitly convert to RGB and ensure uint8 dtype
+    rgb_image = image.convert('RGB')
+    return np.array(rgb_image, dtype=np.uint8)
 
 
 def mask_to_polygon(mask, simplify_tolerance=2.0):
@@ -139,9 +141,11 @@ def handler(job):
         height, width = image.shape[:2]
         
         print(f"Segmenting at pixel ({click_x}, {click_y}) on {width}x{height} image")
+        print(f"Image dtype: {image.dtype}, shape: {image.shape}")
         
-        # Set image for predictor - explicitly cast to uint8 to avoid dtype inference issues
-        predictor.set_image(image.astype(np.uint8))
+        # Set image for predictor - ensure contiguous array with correct dtype
+        image_uint8 = np.ascontiguousarray(image, dtype=np.uint8)
+        predictor.set_image(image_uint8)
         
         # Create input point - explicitly specify dtypes for numpy/torch compatibility
         input_point = np.array([[click_x, click_y]], dtype=np.float32)
