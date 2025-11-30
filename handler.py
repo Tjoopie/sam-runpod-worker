@@ -146,10 +146,19 @@ def handler(job):
         print(f"Segmenting at pixel ({click_x}, {click_y}) on {width}x{height} image")
         print(f"Image dtype: {image.dtype}, shape: {image.shape}")
         
-        # Set image for predictor - the image should already be uint8 from base64_to_image
-        # Just ensure it's contiguous
+        # Ensure image is proper numpy array with correct dtype
+        # Convert to contiguous array if needed
         if not image.flags['C_CONTIGUOUS']:
             image = np.ascontiguousarray(image)
+        
+        # Verify the image is uint8
+        if image.dtype != np.uint8:
+            print(f"WARNING: Image dtype is {image.dtype}, converting to uint8")
+            image = image.astype(np.uint8)
+        
+        print(f"Final image dtype: {image.dtype}, contiguous: {image.flags['C_CONTIGUOUS']}")
+        
+        # Set image for predictor
         predictor.set_image(image)
         
         # Create input point - explicitly specify dtypes for numpy/torch compatibility
