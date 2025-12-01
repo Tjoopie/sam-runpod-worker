@@ -1,5 +1,6 @@
 # RunPod SAM Worker Dockerfile
-FROM runpod/pytorch:2.1.0-py3.10-cuda11.8.0-devel-ubuntu22.04
+# Use a stable PyTorch image with good numpy compatibility
+FROM runpod/pytorch:2.2.1-py3.10-cuda12.1.1-devel-ubuntu22.04
 
 WORKDIR /app
 
@@ -11,17 +12,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-# Force reinstall numpy to ensure PyTorch-numpy compatibility
-RUN pip uninstall -y numpy && \
-    pip install --no-cache-dir numpy==1.24.3 && \
+# Use numpy version compatible with PyTorch 2.2
+RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
+    numpy==1.26.4 \
     runpod>=1.6.0 \
     opencv-python-headless>=4.8.0 \
     Pillow>=10.0.0 \
     git+https://github.com/facebookresearch/segment-anything.git
 
-# Verify numpy-torch compatibility
-RUN python -c "import torch; import numpy as np; print(f'Torch: {torch.__version__}, Numpy: {np.__version__}'); t = torch.tensor([1,2,3]); print(t.numpy())"
+# Verify numpy-torch compatibility with GPU operations
+RUN python -c "import torch; import numpy as np; print(f'Torch: {torch.__version__}, Numpy: {np.__version__}'); t = torch.tensor([1,2,3]); print('CPU:', t.numpy()); print('CUDA available:', torch.cuda.is_available())"
 
 # Download SAM model (vit_b for faster inference)
 RUN mkdir -p /app && \
