@@ -11,12 +11,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-RUN pip install --no-cache-dir \
+# Force reinstall numpy to ensure PyTorch-numpy compatibility
+RUN pip uninstall -y numpy && \
+    pip install --no-cache-dir numpy==1.24.3 && \
+    pip install --no-cache-dir \
     runpod>=1.6.0 \
     opencv-python-headless>=4.8.0 \
     Pillow>=10.0.0 \
-    numpy>=1.24.0 \
     git+https://github.com/facebookresearch/segment-anything.git
+
+# Verify numpy-torch compatibility
+RUN python -c "import torch; import numpy as np; print(f'Torch: {torch.__version__}, Numpy: {np.__version__}'); t = torch.tensor([1,2,3]); print(t.numpy())"
 
 # Download SAM model (vit_b for faster inference)
 RUN mkdir -p /app && \
